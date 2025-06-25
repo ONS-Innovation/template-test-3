@@ -1,5 +1,5 @@
 ---
-name: CI
+name: Security Scan
 
 on: # yamllint disable-line rule:truthy
   push:
@@ -8,37 +8,26 @@ on: # yamllint disable-line rule:truthy
     branches: [main]
 
 concurrency:
-  {% raw -%}
   group: "${{ github.head_ref || github.ref }}-${{ github.workflow }}"
-  {%- endraw %}
   cancel-in-progress: true
 
 jobs:
-  lint-test:
-    name: Lint and Test
+  security-scan:
+    name: Bandit Security Scan
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      {%- if package_manager == 'poetry' %}
       - name: Install Poetry
         run: pipx install poetry==1.8.3
-      {%- endif %}
-      {%- if package_manager == 'pipenv' %}
-      - name: Install Pipenv
-        run: pipx install pipenv==2025.0.3
-      {%- endif %}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version-file: .python-version
-          cache: {{ package_manager }}
+          cache: poetry
 
       - name: Install dependencies
         run: make install-dev
 
-      - name: Lint Python
-        run: make lint
-
-      - name: Test
-        run: make test
+      - name: Security scan
+        run: make security-scan
